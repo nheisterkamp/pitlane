@@ -22,11 +22,7 @@ enum Wine {
             "MTL_HUD_ENABLED": s.metalHUD ? "1" : "0",
         ]
 
-        if s.debugLogging {
-            e["DXMT_LOG_LEVEL"] = "info"
-            e["DXVK_LOG_LEVEL"] = "info"
-            e["DXVK_LOG_PATH"] = Paths.logs.path
-        }
+        if s.debugLogging { e["DXMT_LOG_LEVEL"] = "info" }
 
         let r = Runtime.renderers
         switch s.backend {
@@ -37,22 +33,11 @@ enum Wine {
             e["DYLD_FALLBACK_FRAMEWORK_PATH"] = ext.path
         case .dxmt:
             e["WINEDLLPATH_PREPEND"] = r.appendingPathComponent("dxmt/wine").path
-            if s.metalFX {
-                // Renders the swapchain at 1/factor and upscales it with MetalFX spatial.
+            if s.metalFX && !s.retina && MetalFXSupport.available {
+                // MetalFX spatial upscales the game's output by `factor` (e.g. points → Retina pixels).
                 e["DXMT_METALFX_SPATIAL_SWAPCHAIN"] = "1"
                 e["DXMT_CONFIG"] = "d3d11.metalSpatialUpscaleFactor=\(String(format: "%.2f", s.metalFXFactor));"
             }
-        case .dxvk:
-            // DXVK 3 needs Vulkan 1.3+, which only KosmicKrisp provides on macOS.
-            let icd = Runtime.kosmicKrispICD().path
-            e["WINEDLLPATH_PREPEND"] = r.appendingPathComponent("dxvk3/wine").path
-            e["VK_DRIVER_FILES"] = icd
-            e["VK_ICD_FILENAMES"] = icd
-            e["DXVK_ASYNC"] = "1"
-            e["DXVK_SHADER_CACHE_PATH"] = Paths.cache.path
-            e["DXVK_HUD"] = s.metalHUD ? "fps,frametimes" : "0"
-        case .wined3d:
-            break
         }
         return e
     }
@@ -77,6 +62,15 @@ enum Wine {
         try await Shell.run(Runtime.wine.path, args, env: environment(settings),
                             log: Paths.logs.appendingPathComponent(log))
     }
+
+    /// Chromium switches for Ubisoft Connect, honoured thanks to the libcef patch: one renderer
+    /// process, no site isolation, small JS heap and disk cache. Measured while playing:
+    /// ≈2.05 GB instead of ≈2.7 GB. The login and online session work as normal.
+    static let leanUbisoftSwitches = [
+        "-upc_desktop_mode", "--renderer-process-limit=1", "--disable-site-isolation-trials",
+        "--disable-features=site-per-process,IsolateOrigins,Translate,MediaRouter,BackForwardCache,AudioServiceOutOfProcess",
+        "--js-flags=--max-old-space-size=192", "--disk-cache-size=1048576", "--disable-gpu-shader-disk-cache",
+    ]
 
     static func waitIdle() async {
         _ = try? await Shell.run(Runtime.wineserver.path, ["-w"], env: environment(Settings()))

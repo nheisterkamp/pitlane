@@ -40,10 +40,14 @@ private struct GeneralTab: View {
 
     var body: some View {
         Form {
-            Section("When playing") {
+            Section {
                 Toggle("Quit the launcher when the game starts", isOn: $launcher.settings.quitOnLaunch)
                 Toggle("Run Ubisoft Connect on efficiency cores", isOn: $launcher.settings.deprioritizeUbisoft)
                 Toggle("Shut down Ubisoft Connect after playing", isOn: $launcher.settings.cleanupAfterExit)
+                Toggle("Lean Ubisoft Connect (experimental)", isOn: $launcher.settings.leanUbisoft)
+            } footer: {
+                Text("Lean mode starts Ubisoft Connect with memory-saving options: about 650 MB less RAM while playing. Its main window opens instead of the small launch dialog.")
+                    .foregroundStyle(.secondary)
             }
             Section("Troubleshooting") {
                 Toggle("Debug logging (slower)", isOn: $launcher.settings.debugLogging)
@@ -64,6 +68,21 @@ private struct GraphicsTab: View {
 
     private var refreshRate: Int { NSScreen.main?.maximumFramesPerSecond ?? 60 }
 
+    private var metalFXUsable: Bool {
+        launcher.settings.backend == .dxmt && MetalFXSupport.available && !launcher.settings.retina
+    }
+
+    private var metalFXNote: String {
+        if launcher.settings.backend != .dxmt {
+            return "Needs DXMT. (D3DMetal's MetalFX only replaces DLSS, which Trackmania doesn't have.)"
+        }
+        if !MetalFXSupport.available {
+            return "Only useful on a Retina screen: it upscales the output, and this display shows 1 pixel per point."
+        }
+        if launcher.settings.retina { return "Turn Retina resolution off: MetalFX then produces the Retina pixels at lower cost." }
+        return "The game renders at point resolution and MetalFX upscales it to Retina sharpness, for much less GPU work than Retina mode."
+    }
+
     var body: some View {
         Form {
             Section {
@@ -78,8 +97,8 @@ private struct GraphicsTab: View {
 
             Section {
                 Toggle("MetalFX upscaling", isOn: $launcher.settings.metalFX)
-                    .disabled(launcher.settings.backend != .dxmt)
-                if launcher.settings.metalFX && launcher.settings.backend == .dxmt {
+                    .disabled(!metalFXUsable)
+                if launcher.settings.metalFX && metalFXUsable {
                     Picker("Upscale factor", selection: $launcher.settings.metalFXFactor) {
                         Text("1.25×").tag(1.25)
                         Text("1.5×").tag(1.5)
@@ -89,10 +108,7 @@ private struct GraphicsTab: View {
             } header: {
                 Text("Upscaling")
             } footer: {
-                Text(launcher.settings.backend == .dxmt
-                     ? "Renders at a lower resolution and upscales with Apple's MetalFX. Most useful on Retina screens."
-                     : "Needs the DXMT translation layer. (D3DMetal's MetalFX only replaces DLSS, which Trackmania doesn't have.)")
-                    .foregroundStyle(.secondary)
+                Text(metalFXNote).foregroundStyle(.secondary)
             }
 
             Section("Frame rate") {

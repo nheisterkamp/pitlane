@@ -163,6 +163,14 @@ final class Launcher: ObservableObject {
             if mode == .windowed, let size = settings.windowSize {
                 GameConfig.setWindowSize(size, retina: settings.retina)
             }
+            if settings.leanUbisoft && !Wine.serverRunning {
+                // Start Ubisoft Connect ourselves with memory-saving switches; the game connects to it.
+                status = "Starting Ubisoft Connect (lean)…"
+                try Wine.spawn(Paths.ubisoftDir.appendingPathComponent("upc.exe"), args: Wine.leanUbisoftSwitches,
+                               settings: settings, log: "ubisoft.log")
+                for _ in 0..<20 where !Shell.isRunning(#"[u]pc\.exe"#) { try? await Task.sleep(for: .seconds(1)) }
+                try? await Task.sleep(for: .seconds(8))
+            }
             // Start the game directly: Ubisoft Connect launches in the background for the login
             // only. Its "Play" button can hang on "Preparing to launch".
             try Wine.spawn(Paths.gameExe, settings: settings, log: "game.log")
@@ -171,6 +179,7 @@ final class Launcher: ObservableObject {
             }
             if settings.quitOnLaunch {
                 status = "Launching… the launcher will close."
+                if Self.echo { return } // headless `--play`: the caller exits
                 try? await Task.sleep(for: .seconds(2))
                 NSApp.terminate(nil)
             } else {

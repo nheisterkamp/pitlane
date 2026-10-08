@@ -76,7 +76,7 @@ enum Runtime {
         let wineVersion = (try? String(contentsOf: frameworks.appendingPathComponent("wswine.bundle/version"), encoding: .utf8))?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return [("Wine", wineVersion ?? "?"), ("D3DMetal", d3dm ?? "?"), ("DXMT", file("dxmt/version") ?? "?"),
-                ("DXVK", file("dxvk3/version") ?? "?"), ("Template", active.templateVersion)]
+                ("Template", active.templateVersion)]
     }
 
     static var description: String {
@@ -85,17 +85,6 @@ enum Runtime {
         let wine = (v["Wine"] ?? "?").replacingOccurrences(of: "WineCX ", with: "CX")
             .replacingOccurrences(of: #" \(revision \d+\)"#, with: "", options: .regularExpression)
         return "Wine \(wine) · D3DMetal \(v["D3DMetal"] ?? "?")"
-    }
-
-    /// Vulkan ICD manifest for KosmicKrisp with an absolute library path.
-    static func kosmicKrispICD() -> URL {
-        let url = dir.appendingPathComponent("kosmickrisp_icd.json")
-        if !FileManager.default.fileExists(atPath: url.path) {
-            let lib = frameworks.appendingPathComponent("libvulkan_kosmickrisp.dylib").path
-            let json = #"{"file_format_version":"1.0.1","ICD":{"library_path":"\#(lib)","api_version":"1.4.363"}}"#
-            try? json.write(to: url, atomically: true, encoding: .utf8)
-        }
-        return url
     }
 
     /// Makes `manifest` the active runtime, installing what's missing. Parts already present in

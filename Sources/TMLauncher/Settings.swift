@@ -1,17 +1,18 @@
 import Foundation
 
-/// Direct3D 11 → Metal translation layer used for the game.
+/// Direct3D 11 → Metal translation layer used for the game. Only layers that run Trackmania
+/// are offered: DXVK fails (DXVK 3 needs shaderCullDistance, which MoltenVK lacks, and this
+/// engine's Mac driver loads MoltenVK directly, so KosmicKrisp can't be used; DXVK 1.10 hangs),
+/// and WineD3D can't (macOS OpenGL 4.1 has no compute shaders). Old values decode to D3DMetal.
 enum Backend: String, Codable, CaseIterable, Identifiable {
-    case d3dmetal, dxmt, dxvk, wined3d
+    case d3dmetal, dxmt
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .d3dmetal: "D3DMetal (Apple GPTK), fastest"
-        case .dxmt: "DXMT (open source Metal)"
-        case .dxvk: "DXVK 3 + KosmicKrisp (Vulkan)"
-        case .wined3d: "WineD3D (OpenGL), compatibility"
+        case .d3dmetal: "D3DMetal (Apple Game Porting Toolkit)"
+        case .dxmt: "DXMT (open source, supports MetalFX)"
         }
     }
 
@@ -19,8 +20,6 @@ enum Backend: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .d3dmetal: "D3DMetal"
         case .dxmt: "DXMT"
-        case .dxvk: "DXVK"
-        case .wined3d: "WineD3D"
         }
     }
 }
@@ -45,6 +44,8 @@ struct Settings: Codable, Equatable {
     /// Mac keyboard: Command acts as Ctrl, Option as Alt (Wine Mac driver options).
     var commandIsCtrl = false
     var optionIsAlt = false
+    /// Start Ubisoft Connect ourselves with Chromium memory switches (≈650 MB less while playing).
+    var leanUbisoft = false
     /// Registry values last written, to skip the (slow) write when nothing changed.
     var appliedRegistry: [String: String] = [:]
 
@@ -68,6 +69,7 @@ struct Settings: Codable, Equatable {
         maxFps = try? c.decodeIfPresent(Int.self, forKey: .maxFps)
         commandIsCtrl = (try? c.decodeIfPresent(Bool.self, forKey: .commandIsCtrl)) ?? d.commandIsCtrl
         optionIsAlt = (try? c.decodeIfPresent(Bool.self, forKey: .optionIsAlt)) ?? d.optionIsAlt
+        leanUbisoft = (try? c.decodeIfPresent(Bool.self, forKey: .leanUbisoft)) ?? d.leanUbisoft
         appliedRegistry = (try? c.decodeIfPresent([String: String].self, forKey: .appliedRegistry)) ?? d.appliedRegistry
     }
 

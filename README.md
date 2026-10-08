@@ -23,14 +23,25 @@ and Rosetta 2.
 | Layer | Component | Why |
 |---|---|---|
 | Wine | Sikarugir **WineCX 24.0.7_7** (CrossOver 24 sources) | Newest engine that runs current Ubisoft Connect. Upstream Wine 9 to 11 leaves its window blank, Sikarugir's Wine 11.0_1 can't run wineboot on macOS 27, and Apple's GPTK Wine 7.7 is too old. Uses msync. |
-| D3D11 → Metal | **D3DMetal 4.0b2** (GPTK 4), default | Apple's translation layer, the fastest on Apple Silicon. |
-| | **DXMT v0.80-244** | Open-source D3D11 → Metal. |
-| | **DXVK 3.1.1 + KosmicKrisp** | DXVK on Mesa's Vulkan 1.4-on-Metal driver (instead of MoltenVK). |
-| | WineD3D (OpenGL) | Compatibility fallback. |
+| D3D11 → Metal | **D3DMetal 4.0b2** (GPTK 4), default | Apple's translation layer. |
+| | **DXMT v0.80-244** | Open-source D3D11 → Metal, with MetalFX upscaling. |
 | Store | Ubisoft Connect (latest, silent install) | Needed for login and online play. |
 
 The renderers come from Sikarugir Template 1.0.21. Both archives are pinned by SHA-256 in
 [`Runtime.swift`](Sources/TMLauncher/Runtime.swift). Proton isn't an option: it is Linux-only.
+
+### Tested on an M5 Max, macOS 27 (menu scene, frame limit 144)
+
+| Option | Result |
+|---|---|
+| D3DMetal, 3440×1440 | ✅ 144 FPS, 1.6 ms GPU time per frame |
+| DXMT, 3440×1440 | ✅ 144 FPS, 1.7–2.0 ms GPU time per frame |
+| DXMT + MetalFX 2× | ✅ works, but on a 1× display it upscales 3440×1440 → 6880×2880 (3.5 ms), so it's only offered on Retina screens |
+| DXVK 3.1.1 | ❌ needs `shaderCullDistance`, which MoltenVK lacks. This engine's Mac driver loads MoltenVK directly, and swapping in KosmicKrisp through the Vulkan loader gives a white window |
+| DXVK 1.10.3 (MoltenVK) | ❌ game hangs on a white window |
+| WineD3D (OpenGL) | ❌ white window: macOS OpenGL 4.1 has no compute shaders |
+| macOS Game Mode | ❌ stays off, even with a game category added to Wine's embedded Info.plist and in exclusive fullscreen. Wine doesn't use native macOS fullscreen |
+| Lean Ubisoft Connect | ✅ 0.7–2.0 GB instead of ~2.7 GB while playing, online session OK |
 
 ## Fullscreen or windowed
 
@@ -92,16 +103,16 @@ one-time steps with your Apple Developer account, listed at the top of the scrip
 
 | Tab | What |
 |---|---|
-| General | Quit on launch, efficiency cores for Ubisoft Connect, shutdown after play, debug logging |
-| Graphics | Translation layer, Retina, performance HUD, **MetalFX upscaling** (DXMT only), **frame limit** (the game's MaxFps) |
+| General | Quit on launch, efficiency cores for Ubisoft Connect, shutdown after play, **lean Ubisoft Connect** (Chromium memory switches, about 650 MB+ less RAM), debug logging |
+| Graphics | Translation layer (D3DMetal or DXMT), Retina, performance HUD, **MetalFX upscaling** (DXMT on Retina screens), **frame limit** (the game's MaxFps) |
 | Input | Command → Ctrl and Option → Alt (Wine Mac driver), controllers detected by macOS |
 | Openplanet | One-click install/update/remove of [Openplanet](https://openplanet.dev). The installer refuses the game folder under Wine, so its payload is extracted with a pinned 7-Zip build. |
 | Maintenance | Disk usage, clear downloads/logs/temp, repair runtime, reset the Windows environment (keeps the game; you sign in to Ubisoft Connect again and it verifies the files), uninstall |
 | Updates | Installed component versions; checks Sikarugir for newer graphics runtimes (verified with GitHub's SHA-256 digest, one-click revert to the tested one). Newer Wine engines are listed but not installed until tested. |
 
 About MetalFX: D3DMetal's `D3DM_ENABLE_METALFX` only replaces DLSS, which Trackmania doesn't
-have. DXMT's swapchain upscaler works for any game: it renders at 1/factor and upscales with
-MetalFX spatial. That helps most on Retina screens.
+have. DXMT's swapchain upscaler multiplies the output resolution. With Retina mode off on a
+Retina screen, the game renders at point resolution and MetalFX produces the Retina pixels.
 
 ## Logs and diagnostics
 
@@ -125,8 +136,9 @@ prints the report without opening a window.
 
 | Symptom | Fix |
 |---|---|
+| Black bars at the sides on an ultrawide screen | Seen in the menus with every renderer and resolution setting: the window is full width, but the menu scene renders 16:9. Not a launcher setting. |
 | Track parts missing | In game: set shader quality to High or Very High. |
-| Crash or stutter on one renderer | Settings ⚙ → Graphics → try DXMT, then DXVK. |
+| Crash or stutter on one renderer | Settings ⚙ → Graphics → switch between D3DMetal and DXMT. |
 | Ubisoft Connect window blank | It updated to a new Chromium build. Check `logs/` and update the signature in `LibcefPatch.swift`. |
 | Anything else | Settings ⚙ → Kill Wine, then Play again. Logs are in `TMLauncher/logs/` and in the prefix's Ubisoft `logs/` folder. |
 

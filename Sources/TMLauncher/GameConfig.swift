@@ -45,6 +45,13 @@ struct WindowSize: Codable, Hashable, Comparable {
     }
 }
 
+/// DXMT's MetalFX upscales the game's output by up to 2×: on a Retina screen with Retina mode off,
+/// the game renders at point resolution and MetalFX produces Retina-sharp pixels. On a 1× screen
+/// it would only render more pixels than the display has (measured: 3440×1440 → 6880×2880).
+enum MetalFXSupport {
+    static var available: Bool { (NSScreen.main?.backingScaleFactor ?? 1) > 1 }
+}
+
 /// Edits Trackmania's own settings file before launch. The game reads it at startup.
 enum GameConfig {
     static var url: URL {

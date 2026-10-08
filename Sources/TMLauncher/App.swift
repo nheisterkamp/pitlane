@@ -17,6 +17,12 @@ struct TMLauncherApp: App {
         if CommandLine.arguments.contains("--setup") {
             Self.headlessSetup()
         }
+        // `--play fullscreen|windowed` starts the game without showing the launcher
+        // (usable from scripts, Raycast/Alfred or a Dock shortcut).
+        if let i = CommandLine.arguments.firstIndex(of: "--play") {
+            let mode: DisplayMode = CommandLine.arguments.dropFirst(i + 1).first == "windowed" ? .windowed : .fullscreen
+            Self.headlessPlay(mode)
+        }
         // Developer aid: `--snapshot out.png` renders the main view off-screen (never shown).
         // `--snapshot out.png settings 1` renders a Settings tab instead.
         let args = CommandLine.arguments
@@ -36,6 +42,23 @@ struct TMLauncherApp: App {
             let ok = launcher.phase == .needsGame || launcher.phase == .ready
             print("RESULT: \(ok ? "OK" : "FAILED") phase=\(launcher.phase) in \(Int(Date().timeIntervalSince(start)))s")
             exit(ok ? 0 : 1)
+        }
+        RunLoop.main.run()
+        exit(1)
+    }
+
+    @MainActor
+    private static func headlessPlay(_ mode: DisplayMode) -> Never {
+        Launcher.echo = true
+        let launcher = Launcher()
+        Task { @MainActor in
+            await launcher.refresh()
+            guard launcher.phase == .ready else {
+                print("Not ready: \(launcher.status)")
+                exit(1)
+            }
+            await launcher.play(mode)
+            exit(launcher.phase == .failed ? 1 : 0)
         }
         RunLoop.main.run()
         exit(1)
