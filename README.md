@@ -34,6 +34,11 @@ leaves every other setting alone. Fullscreen uses the game's borderless mode (`w
 no display mode switch, and Cmd-Tab is instant. The mode you used last becomes the default
 button (Return).
 
+The arrow on **Play Windowed** picks the window size. It offers common 16:9, 16:10 and
+ultrawide sizes that fit your screen, plus "Fit screen" (the largest 16:9 that fits). Sizes are
+in screen points and are scaled for Retina mode. The default, "Keep game setting", leaves the
+size the game saved alone.
+
 ## Performance choices
 
 - The launcher starts `Trackmania.exe` directly and quits. Ubisoft Connect runs in the

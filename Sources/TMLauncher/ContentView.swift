@@ -85,16 +85,53 @@ struct ContentView: View {
 
     @ViewBuilder
     private func playButton(_ mode: DisplayMode, last: Bool) -> some View {
-        let button = Button { Task { await launcher.play(mode) } } label: {
-            Label("Play \(mode.label)",
-                  systemImage: mode == .fullscreen ? "arrow.up.left.and.arrow.down.right" : "macwindow")
-                .frame(maxWidth: .infinity)
-        }
-        if last {
-            button.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+        if mode == .windowed {
+            // Split button: click plays, the arrow picks the window size.
+            let menu = Menu {
+                windowSizeItems
+            } label: {
+                Label("Play Windowed", systemImage: "macwindow").frame(maxWidth: .infinity)
+            } primaryAction: {
+                Task { await launcher.play(.windowed) }
+            }
+            .menuStyle(.button)
+            .help("Window size: \(currentSizeLabel)")
+            if last {
+                menu.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+            } else {
+                menu.buttonStyle(.bordered)
+            }
         } else {
-            button.buttonStyle(.bordered)
+            let button = Button { Task { await launcher.play(mode) } } label: {
+                Label("Play Fullscreen", systemImage: "arrow.up.left.and.arrow.down.right")
+                    .frame(maxWidth: .infinity)
+            }
+            if last {
+                button.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+            } else {
+                button.buttonStyle(.bordered)
+            }
         }
+    }
+
+    @ViewBuilder
+    private var windowSizeItems: some View {
+        let presets = WindowSize.presets()
+        Section("Window size") {
+            sizeItem(nil, "Keep game setting (\(GameConfig.windowSize?.replacingOccurrences(of: "x", with: " × ") ?? "default"))")
+            if let fit = presets.fit { sizeItem(fit, "Fit screen (\(fit.label))") }
+            ForEach(presets.sizes.reversed(), id: \.self) { sizeItem($0, $0.label) }
+        }
+    }
+
+    private func sizeItem(_ size: WindowSize?, _ title: String) -> some View {
+        Toggle(title, isOn: Binding(
+            get: { launcher.settings.windowSize == size },
+            set: { if $0 { launcher.settings.windowSize = size; launcher.saveSettings() } }))
+    }
+
+    private var currentSizeLabel: String {
+        launcher.settings.windowSize?.label ?? "game setting"
     }
 }
 

@@ -33,6 +33,8 @@ struct Settings: Codable, Equatable {
     var cleanupAfterExit = true
     var deprioritizeUbisoft = true
     var displayMode: DisplayMode = .fullscreen
+    /// nil keeps whatever size the game has saved.
+    var windowSize: WindowSize?
     /// Wine error output in the logs. Off by default: logging costs CPU on every call.
     var debugLogging = false
     /// What RetinaMode was last written to the registry as, to skip the write when unchanged.
@@ -52,6 +54,7 @@ struct Settings: Codable, Equatable {
         deprioritizeUbisoft = (try? c.decodeIfPresent(Bool.self, forKey: .deprioritizeUbisoft)) ?? d.deprioritizeUbisoft
         displayMode = (try? c.decodeIfPresent(DisplayMode.self, forKey: .displayMode)) ?? d.displayMode
         debugLogging = (try? c.decodeIfPresent(Bool.self, forKey: .debugLogging)) ?? d.debugLogging
+        windowSize = try? c.decodeIfPresent(WindowSize.self, forKey: .windowSize)
         appliedRetina = try? c.decodeIfPresent(Bool.self, forKey: .appliedRetina)
     }
 

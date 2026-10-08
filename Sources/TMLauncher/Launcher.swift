@@ -150,6 +150,9 @@ final class Launcher: ObservableObject {
         do {
             try await prepare()
             GameConfig.setDisplayMode(mode)
+            if mode == .windowed, let size = settings.windowSize {
+                GameConfig.setWindowSize(size, retina: settings.retina)
+            }
             // Start the game directly: Ubisoft Connect launches in the background for the login
             // only. Its "Play" button can hang on "Preparing to launch".
             try Wine.spawn(Paths.gameExe, settings: settings, log: "game.log")
