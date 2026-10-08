@@ -146,4 +146,5 @@ Credits: the Ubisoft Connect fixes were found by
 [Esvalirion/trackmania-mac](https://github.com/Esvalirion/trackmania-mac) (MIT). The runtimes
 are by [Sikarugir](https://github.com/Sikarugir-App), [3Shain/dxmt](https://github.com/3Shain/dxmt),
 DXVK, Mesa and Apple. D3DMetal is licensed by Apple for non-commercial use. The Pitlane icon is
-original artwork.
+original artwork: an Icon Composer document (`Resources/Pitlane.icon`, SVG layers) compiled by
+`actool` into a vector `Assets.car` for macOS 26+, with an `.icns` fallback for older macOS.

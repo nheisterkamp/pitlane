@@ -14,7 +14,10 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/TMLauncher"
 strip -x "$APP/Contents/MacOS/TMLauncher"
-cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Icon Composer document → Assets.car (vector, Liquid Glass on macOS 26+) + Pitlane.icns fallback.
+xcrun actool Resources/Pitlane.icon --compile "$APP/Contents/Resources" --platform macosx \
+  --minimum-deployment-target 14.0 --app-icon Pitlane \
+  --output-partial-info-plist "$(mktemp -t pitlane-icon).plist" >/dev/null
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -25,7 +28,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleDisplayName</key><string>Pitlane</string>
   <key>CFBundleIdentifier</key><string>nl.nhsd.pitlane</string>
   <key>CFBundleExecutable</key><string>TMLauncher</string>
-  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundleIconFile</key><string>Pitlane</string>
+  <key>CFBundleIconName</key><string>Pitlane</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${VERSION}</string>
   <key>CFBundleVersion</key><string>${VERSION}</string>

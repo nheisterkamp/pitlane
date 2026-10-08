@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Pitlane mark in the Trackmania letter style: wide, low, strongly slanted, thin bars,
+       softened corners. Drawn upright, then skewed around the centre. -->
+  <g transform="translate(512 512) scale(1.2) skewX(-20) translate(-500 -532)"
+     fill="#FFFFFF" stroke="#FFFFFF" stroke-width="22" stroke-linejoin="round">
+    <!-- P: top bar, bowl side, bowl bottom, long stem -->
+    <path d="M 372 352 H 742 V 572 H 452 V 712 H 372 Z M 452 422 V 502 H 662 V 422 Z" fill-rule="evenodd"/>
+    <!-- speed bars -->
+    <path d="M 196 432 H 332 V 470 H 156 Z"/>
+    <path d="M 236 528 H 332 V 566 H 206 Z"/>
+  </g>
+</svg>
