@@ -47,18 +47,9 @@ enum Wine {
 
     /// Starts a Windows program and returns immediately. The process outlives the launcher.
     static func spawn(_ exe: URL, args: [String] = [], settings: Settings, log: String) throws {
-        let p = Process()
-        p.executableURL = Runtime.wine
-        p.arguments = [exe.path] + args
-        p.environment = environment(settings)
-        p.currentDirectoryURL = exe.deletingLastPathComponent()
-        let logURL = Paths.logs.appendingPathComponent(log)
-        FileManager.default.createFile(atPath: logURL.path, contents: nil)
-        let h = try FileHandle(forWritingTo: logURL)
-        p.standardOutput = h
-        p.standardError = h
-        p.standardInput = FileHandle.nullDevice
-        try p.run()
+        try Shell.spawnDetached(Runtime.wine.path, [exe.path] + args, env: environment(settings),
+                                cwd: exe.deletingLastPathComponent(),
+                                log: Paths.logs.appendingPathComponent(log))
     }
 
     /// Runs a Wine command to completion (setup steps).
@@ -86,7 +77,8 @@ enum Wine {
         Shell.isRunning(NSRegularExpression.escapedPattern(for: "\(Runtime.id)/frameworks/wswine.bundle/") + ".*wineserver")
     }
 
-    static var gameRunning: Bool { Shell.isRunning(#"[T]rackmania\.exe"#) }
+    /// A path separator before the name: matches the game, not shells or editors mentioning it.
+    static var gameRunning: Bool { Shell.isRunning(#"[/\\][T]rackmania\.exe"#) }
 
     /// A tiny detached shell that watches the game after the launcher has quit (it sleeps, so
     /// it costs nothing):
@@ -96,9 +88,9 @@ enum Wine {
     /// - after the game exits, it optionally shuts the prefix down.
     static func scheduleWatcher(demote: Bool, cleanup: Bool) throws {
         let script = """
-        i=0; until pgrep -qf '[T]rackmania\\.exe'; do i=$((i+1)); [ $i -gt 120 ] && exit 0; sleep 2; done
+        i=0; until pgrep -qf '[/\\\\][T]rackmania\\.exe'; do i=$((i+1)); [ $i -gt 120 ] && exit 0; sleep 2; done
         n=9
-        while pgrep -qf '[T]rackmania\\.exe'; do
+        while pgrep -qf '[/\\\\][T]rackmania\\.exe'; do
           n=$((n+1))
           if [ "$2" = 1 ] && [ $n -ge 12 ]; then
             n=0
@@ -111,12 +103,8 @@ enum Wine {
         [ "$3" = 1 ] && { sleep 3; exec "$1" -k; }
         exit 0
         """
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/bin/sh")
-        p.arguments = ["-c", script, "tm-watch", Runtime.wineserver.path, demote ? "1" : "0", cleanup ? "1" : "0"]
-        p.environment = ["WINEPREFIX": Paths.prefix.path, "PATH": "/usr/bin:/bin"]
-        p.standardOutput = FileHandle.nullDevice
-        p.standardError = FileHandle.nullDevice
-        try p.run()
+        try Shell.spawnDetached("/bin/sh",
+                                ["-c", script, "tm-watch", Runtime.wineserver.path, demote ? "1" : "0", cleanup ? "1" : "0"],
+                                env: ["WINEPREFIX": Paths.prefix.path, "PATH": "/usr/bin:/bin"])
     }
 }

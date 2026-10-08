@@ -38,7 +38,6 @@ struct ContentView: View {
 
             primaryButton
                 .controlSize(.large)
-                .keyboardShortcut(.defaultAction)
         }
         .padding(20)
         .frame(width: 380)
@@ -54,7 +53,12 @@ struct ContentView: View {
                 Button("Recheck") { Task { await launcher.refresh() } }
             }
         case .ready:
-            wide("Play") { await launcher.play() }
+            // Two Play buttons; the mode used last is the prominent one (and Return).
+            HStack {
+                ForEach(DisplayMode.allCases, id: \.self) { mode in
+                    playButton(mode, last: launcher.settings.displayMode == mode)
+                }
+            }
         case .running:
             wide("Stop game") { await launcher.stop() }
         case .failed:
@@ -69,6 +73,21 @@ struct ContentView: View {
             Text(title).frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
+        .keyboardShortcut(.defaultAction)
+    }
+
+    @ViewBuilder
+    private func playButton(_ mode: DisplayMode, last: Bool) -> some View {
+        let button = Button { Task { await launcher.play(mode) } } label: {
+            Label("Play \(mode.label)",
+                  systemImage: mode == .fullscreen ? "arrow.up.left.and.arrow.down.right" : "macwindow")
+                .frame(maxWidth: .infinity)
+        }
+        if last {
+            button.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+        } else {
+            button.buttonStyle(.bordered)
+        }
     }
 }
 

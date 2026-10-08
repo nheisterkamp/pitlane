@@ -141,12 +141,15 @@ final class Launcher: ObservableObject {
 
     func openUbisoft() async { await startUbisoft(args: []) }
 
-    func play() async {
+    func play(_ mode: DisplayMode) async {
         guard gameReady else { await refresh(); return }
         phase = .working
-        status = "Starting Trackmania…"
+        status = "Starting Trackmania (\(mode.label.lowercased()))…"
+        settings.displayMode = mode
+        settings.save()
         do {
             try await prepare()
+            GameConfig.setDisplayMode(mode)
             // Start the game directly: Ubisoft Connect launches in the background for the login
             // only. Its "Play" button can hang on "Preparing to launch".
             try Wine.spawn(Paths.gameExe, settings: settings, log: "game.log")

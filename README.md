@@ -26,6 +26,14 @@ and Rosetta 2.
 The renderers come from Sikarugir Template 1.0.21. Both archives are pinned by SHA-256 in
 [`Runtime.swift`](Sources/TMLauncher/Runtime.swift). Proton isn't an option: it is Linux-only.
 
+## Fullscreen or windowed
+
+The launcher has two buttons, **Play Fullscreen** and **Play Windowed**. Before starting the
+game it sets `DisplayMode` in Trackmania's own `Documents/Trackmania/Config/Default.json` and
+leaves every other setting alone. Fullscreen uses the game's borderless mode (`windowedfull`):
+no display mode switch, and Cmd-Tab is instant. The mode you used last becomes the default
+button (Return).
+
 ## Performance choices
 
 - The launcher starts `Trackmania.exe` directly and quits. Ubisoft Connect runs in the

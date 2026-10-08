@@ -32,6 +32,7 @@ struct Settings: Codable, Equatable {
     var quitOnLaunch = true
     var cleanupAfterExit = true
     var deprioritizeUbisoft = true
+    var displayMode: DisplayMode = .fullscreen
     /// What RetinaMode was last written to the registry as, to skip the write when unchanged.
     var appliedRetina: Bool?
 
@@ -47,6 +48,7 @@ struct Settings: Codable, Equatable {
         quitOnLaunch = (try? c.decodeIfPresent(Bool.self, forKey: .quitOnLaunch)) ?? d.quitOnLaunch
         cleanupAfterExit = (try? c.decodeIfPresent(Bool.self, forKey: .cleanupAfterExit)) ?? d.cleanupAfterExit
         deprioritizeUbisoft = (try? c.decodeIfPresent(Bool.self, forKey: .deprioritizeUbisoft)) ?? d.deprioritizeUbisoft
+        displayMode = (try? c.decodeIfPresent(DisplayMode.self, forKey: .displayMode)) ?? d.displayMode
         appliedRetina = try? c.decodeIfPresent(Bool.self, forKey: .appliedRetina)
     }
 
