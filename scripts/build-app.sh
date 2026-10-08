@@ -1,10 +1,10 @@
 #!/bin/bash
-# Builds "Trackmania Launcher.app" (arm64, release, stripped) into dist/.
+# Builds "Pitlane.app" (arm64, release, stripped) into dist/.
 # Usage: scripts/build-app.sh [--install]   (--install copies it to ~/Applications)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP="dist/Trackmania Launcher.app"
+APP="dist/Pitlane.app"
 VERSION="${VERSION:-1.0.0}"
 
 swift build -c release --arch arm64
@@ -21,9 +21,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>Trackmania Launcher</string>
-  <key>CFBundleDisplayName</key><string>Trackmania</string>
-  <key>CFBundleIdentifier</key><string>nl.nhsd.tmlauncher</string>
+  <key>CFBundleName</key><string>Pitlane</string>
+  <key>CFBundleDisplayName</key><string>Pitlane</string>
+  <key>CFBundleIdentifier</key><string>nl.nhsd.pitlane</string>
   <key>CFBundleExecutable</key><string>TMLauncher</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -48,7 +48,7 @@ echo "Built $APP ($(du -sh "$APP" | cut -f1))"
 
 if [[ "${1:-}" == "--install" ]]; then
   mkdir -p "$HOME/Applications"
-  rm -rf "$HOME/Applications/Trackmania Launcher.app"
+  rm -rf "$HOME/Applications/Pitlane.app" "$HOME/Applications/Trackmania Launcher.app"  # old name
   cp -R "$APP" "$HOME/Applications/"
-  echo "Installed to ~/Applications/Trackmania Launcher.app"
+  echo "Installed to ~/Applications/Pitlane.app"
 fi

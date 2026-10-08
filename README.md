@@ -1,6 +1,12 @@
-# Trackmania Launcher for Apple Silicon
+# Pitlane
 
-A ~270 KB native SwiftUI launcher that installs and runs Trackmania (2020) on M-series Macs.
+**An unofficial, lightweight Trackmania (2020) launcher for Apple Silicon Macs.**
+
+> Pitlane is not affiliated with or endorsed by Ubisoft, Nadeo, Apple, CodeWeavers or
+> Sikarugir. Trackmania is a trademark of Ubisoft/Nadeo. Pitlane contains no game, Wine,
+> Apple or Ubisoft binaries; it downloads them from their publishers on your Mac.
+
+A small native SwiftUI app that installs and runs Trackmania (2020) on M-series Macs.
 On first run it downloads everything it needs into one folder: the Wine engine, Apple's
 D3DMetal, Ubisoft Connect and the game. After that, Play starts the game and the launcher quits, so
 it uses no memory while you race.
@@ -9,7 +15,7 @@ it uses no memory while you race.
 scripts/build-app.sh --install
 ```
 
-This builds `dist/Trackmania Launcher.app` and copies it to `~/Applications`. It needs Xcode 16+
+This builds `dist/Pitlane.app` and copies it to `~/Applications`. It needs Xcode 16+
 and Rosetta 2.
 
 ## Stack
@@ -70,7 +76,7 @@ Everything lives in `~/Library/Application Support/TMLauncher` (runtime, Wine pr
 Ubisoft Connect and the game, logs, settings). Delete that folder and the app to uninstall.
 Game settings and replays live in `~/Documents/Trackmania`, the same place CrossOver uses.
 
-`TMLAUNCHER_ROOT=/some/dir open -n "dist/Trackmania Launcher.app"` runs a fully separate
+`TMLAUNCHER_ROOT=/some/dir open -n "dist/Pitlane.app"` runs a fully separate
 install, for testing. `TMLauncher --setup` runs first-run setup headless, which with
 `TMLAUNCHER_ROOT` gives a clean-install test. `TMLauncher --snapshot out.png` renders the
 main window invisibly.
@@ -112,7 +118,7 @@ Click the 🔍 button next to ⚙ (or **View logs** when something fails) to ope
 Wine output is silent by default for performance. Turn on Settings ⚙ → **Debug logging** to get
 Wine errors (`WINEDEBUG=err+all`) plus DXMT/DXVK logs on the next launch.
 
-From Terminal: `"~/Applications/Trackmania Launcher.app/Contents/MacOS/TMLauncher" --diagnostics`
+From Terminal: `"~/Applications/Pitlane.app/Contents/MacOS/TMLauncher" --diagnostics`
 prints the report without opening a window.
 
 ## Troubleshooting
@@ -127,5 +133,5 @@ prints the report without opening a window.
 Credits: the Ubisoft Connect fixes were found by
 [Esvalirion/trackmania-mac](https://github.com/Esvalirion/trackmania-mac) (MIT). The runtimes
 are by [Sikarugir](https://github.com/Sikarugir-App), [3Shain/dxmt](https://github.com/3Shain/dxmt),
-DXVK, Mesa and Apple. D3DMetal is licensed by Apple for non-commercial use. Not affiliated with
-Ubisoft, Nadeo, Apple or CodeWeavers.
+DXVK, Mesa and Apple. D3DMetal is licensed by Apple for non-commercial use. The Pitlane icon is
+original artwork.

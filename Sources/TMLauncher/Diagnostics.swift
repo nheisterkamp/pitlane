@@ -89,7 +89,7 @@ enum Diagnostics {
             .map { String(config[$0]).components(separatedBy: "\"").dropLast().last ?? "?" } ?? "no config yet"
 
         return """
-        Trackmania Launcher \(version)
+        Pitlane \(version) (unofficial Trackmania launcher)
         Generated \(Date().formatted(date: .abbreviated, time: .standard))
 
         System

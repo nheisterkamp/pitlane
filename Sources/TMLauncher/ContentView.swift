@@ -10,8 +10,8 @@ struct ContentView: View {
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable().frame(width: 56, height: 56)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Trackmania").font(.title2.bold())
-                    Text(launcher.engineSummary)
+                    Text("Pitlane").font(.title2.bold())
+                    Text("Trackmania · \(launcher.engineSummary)")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()

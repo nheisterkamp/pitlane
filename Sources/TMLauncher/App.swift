@@ -71,7 +71,7 @@ struct TMLauncherApp: App {
     }
 
     var body: some Scene {
-        Window("Trackmania", id: "main") {
+        Window("Pitlane", id: "main") {
             ContentView()
                 .environmentObject(launcher)
                 .task { await launcher.refresh() }
@@ -79,7 +79,7 @@ struct TMLauncherApp: App {
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
 
-        Window("Trackmania Logs", id: "logs") {
+        Window("Pitlane Logs", id: "logs") {
             LogsView()
         }
         .defaultSize(width: 900, height: 560)

@@ -206,10 +206,10 @@ private struct MaintenanceTab: View {
         } message: {
             Text("Wine's Windows folder and Ubisoft Connect are reinstalled. The game files are kept; you sign in to Ubisoft Connect again and it verifies them instead of downloading.")
         }
-        .confirmationDialog("Uninstall the Trackmania launcher?", isPresented: $confirmUninstall) {
+        .confirmationDialog("Uninstall Pitlane?", isPresented: $confirmUninstall) {
             Button("Uninstall", role: .destructive) { Task { await launcher.uninstall() } }
         } message: {
-            Text("Removes the game, Ubisoft Connect, Wine and the launcher app. Game settings and replays in Documents/Trackmania are kept.")
+            Text("Removes the game, Ubisoft Connect, Wine and Pitlane itself. Game settings and replays in Documents/Trackmania are kept.")
         }
     }
 }

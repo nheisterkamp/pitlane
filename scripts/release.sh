@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds a signed, notarized "Trackmania Launcher.dmg" in dist/.
+# Builds a signed, notarized "Pitlane.dmg" in dist/.
 #
 # One-time setup (needs your Apple Developer account):
 #   1. Xcode → Settings → Accounts → your team → Manage Certificates → + → Developer ID Application
@@ -19,14 +19,14 @@ fi
 echo "Signing as: $SIGN_ID"
 
 SIGN_ID="$SIGN_ID" scripts/build-app.sh
-APP="dist/Trackmania Launcher.app"
-DMG="dist/Trackmania Launcher.dmg"
+APP="dist/Pitlane.app"
+DMG="dist/Pitlane.dmg"
 
 STAGE="$(mktemp -d)"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
-hdiutil create -volname "Trackmania Launcher" -srcfolder "$STAGE" -fs APFS -format ULFO "$DMG" >/dev/null
+hdiutil create -volname "Pitlane" -srcfolder "$STAGE" -fs APFS -format ULFO "$DMG" >/dev/null
 rm -rf "$STAGE"
 codesign --force --timestamp --sign "$SIGN_ID" "$DMG"
 
