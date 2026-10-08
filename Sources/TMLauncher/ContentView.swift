@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var launcher: Launcher
+    @Environment(\.openWindow) private var openWindow
     @State private var showSettings = false
 
     var body: some View {
@@ -15,6 +16,9 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
+                Button { openWindow(id: "logs") } label: { Image(systemName: "doc.text.magnifyingglass") }
+                    .buttonStyle(.borderless)
+                    .help("Logs and diagnostics")
                 Button { showSettings.toggle() } label: { Image(systemName: "gearshape") }
                     .buttonStyle(.borderless)
                     .help("Settings")
@@ -62,7 +66,10 @@ struct ContentView: View {
         case .running:
             wide("Stop game") { await launcher.stop() }
         case .failed:
-            wide("Retry") { await launcher.refresh() }
+            HStack {
+                wide("Retry") { await launcher.refresh() }
+                Button("View logs") { openWindow(id: "logs") }
+            }
         case .working:
             wide("Working…") {}.disabled(true)
         }
@@ -103,6 +110,7 @@ struct SettingsView: View {
             }
             Toggle("Retina resolution (sharper, slower)", isOn: $launcher.settings.retina)
             Toggle("Metal performance HUD", isOn: $launcher.settings.metalHUD)
+            Toggle("Debug logging (slower, for troubleshooting)", isOn: $launcher.settings.debugLogging)
             Toggle("Quit launcher when the game starts", isOn: $launcher.settings.quitOnLaunch)
             Toggle("Run Ubisoft Connect on efficiency cores while playing", isOn: $launcher.settings.deprioritizeUbisoft)
             Toggle("Shut down Ubisoft Connect after playing", isOn: $launcher.settings.cleanupAfterExit)

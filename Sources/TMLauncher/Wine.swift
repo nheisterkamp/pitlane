@@ -13,13 +13,20 @@ enum Wine {
             "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
             "LANG": host["LANG"] ?? "en_US.UTF-8",
             "WINEPREFIX": Paths.prefix.path,
-            "WINEDEBUG": "-all",                       // logging costs CPU on every call
+            // Logging costs CPU on every call; the debug setting turns on errors only.
+            "WINEDEBUG": s.debugLogging ? "err+all,fixme-all" : "-all",
             "WINEMSYNC": "1",                          // Mach-semaphore sync: lowest overhead on macOS
             "WINE_SIMULATE_WRITECOPY": "1",            // CEF expects PAGE_READWRITE, not PAGE_WRITECOPY
             "DYLD_FALLBACK_LIBRARY_PATH": "\(Runtime.frameworks.path):/usr/lib",
             "WINEDLLOVERRIDES": "dinput8=n,b",         // lets Openplanet load if present
             "MTL_HUD_ENABLED": s.metalHUD ? "1" : "0",
         ]
+
+        if s.debugLogging {
+            e["DXMT_LOG_LEVEL"] = "info"
+            e["DXVK_LOG_LEVEL"] = "info"
+            e["DXVK_LOG_PATH"] = Paths.logs.path
+        }
 
         let r = Runtime.renderers
         switch s.backend {
@@ -47,6 +54,13 @@ enum Wine {
 
     /// Starts a Windows program and returns immediately. The process outlives the launcher.
     static func spawn(_ exe: URL, args: [String] = [], settings: Settings, log: String) throws {
+        // Keep the previous run's log: after a crash you usually relaunch before looking.
+        let logURL = Paths.logs.appendingPathComponent(log)
+        let prev = logURL.deletingPathExtension().appendingPathExtension("prev.log")
+        if let size = try? logURL.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0 {
+            try? FileManager.default.removeItem(at: prev)
+            try? FileManager.default.moveItem(at: logURL, to: prev)
+        }
         try Shell.spawnDetached(Runtime.wine.path, [exe.path] + args, env: environment(settings),
                                 cwd: exe.deletingLastPathComponent(),
                                 log: Paths.logs.appendingPathComponent(log))

@@ -33,6 +33,8 @@ struct Settings: Codable, Equatable {
     var cleanupAfterExit = true
     var deprioritizeUbisoft = true
     var displayMode: DisplayMode = .fullscreen
+    /// Wine error output in the logs. Off by default: logging costs CPU on every call.
+    var debugLogging = false
     /// What RetinaMode was last written to the registry as, to skip the write when unchanged.
     var appliedRetina: Bool?
 
@@ -49,6 +51,7 @@ struct Settings: Codable, Equatable {
         cleanupAfterExit = (try? c.decodeIfPresent(Bool.self, forKey: .cleanupAfterExit)) ?? d.cleanupAfterExit
         deprioritizeUbisoft = (try? c.decodeIfPresent(Bool.self, forKey: .deprioritizeUbisoft)) ?? d.deprioritizeUbisoft
         displayMode = (try? c.decodeIfPresent(DisplayMode.self, forKey: .displayMode)) ?? d.displayMode
+        debugLogging = (try? c.decodeIfPresent(Bool.self, forKey: .debugLogging)) ?? d.debugLogging
         appliedRetina = try? c.decodeIfPresent(Bool.self, forKey: .appliedRetina)
     }
 

@@ -68,6 +68,24 @@ Game settings and replays live in `~/Documents/Trackmania`, the same place Cross
 `TMLAUNCHER_ROOT=/some/dir open -n "dist/Trackmania Launcher.app"` runs a fully separate
 install, for testing.
 
+## Logs and diagnostics
+
+Click the 🔍 button next to ⚙ (or **View logs** when something fails) to open the logs window:
+
+- **Diagnostics**: a generated report covering system, runtime, settings, libcef patch state,
+  install state, and whether wineserver, the game and the watcher are running. Copy it into
+  a bug report.
+- **Game / Ubisoft Connect Wine output**, the **previous game run** (kept so a crash log
+  survives a relaunch), Ubisoft Connect's **launcher** and **service** logs, **setup**,
+  Trackmania's **UGC errors** and **Openplanet**.
+- Filter, **Errors only**, **Follow** (reloads live and scrolls to the end), Copy, Show in Finder.
+
+Wine output is silent by default for performance. Turn on Settings ⚙ → **Debug logging** to get
+Wine errors (`WINEDEBUG=err+all`) plus DXMT/DXVK logs on the next launch.
+
+From Terminal: `"~/Applications/Trackmania Launcher.app/Contents/MacOS/TMLauncher" --diagnostics`
+prints the report without opening a window.
+
 ## Troubleshooting
 
 | Symptom | Fix |

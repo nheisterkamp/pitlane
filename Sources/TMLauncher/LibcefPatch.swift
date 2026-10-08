@@ -22,6 +22,13 @@ enum LibcefPatch {
     private static let after: [UInt8] = [0x8B, 0x47, 0x34, 0x89, 0x46, 0x34, 0x31, 0xC0, 0x90, 0x89, 0x46, 0x38,
                                          0x8D, 0x46, 0x3C, 0x53, 0x50, 0xFF, 0x77, 0x40, 0xFF, 0x77, 0x3C]
 
+    /// Read-only check, for diagnostics.
+    static func status(of url: URL) -> Result {
+        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { return .unknown }
+        if ranges(of: after, in: data).count == 1 { return .already }
+        return ranges(of: before, in: data).count == 1 ? .patched : .unknown
+    }
+
     static func apply(to url: URL) -> Result {
         guard var data = try? Data(contentsOf: url) else { return .unknown }
         let afterHits = ranges(of: after, in: data)
