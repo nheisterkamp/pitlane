@@ -26,7 +26,12 @@ STAGE="$(mktemp -d)"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
-hdiutil create -volname "Pitlane" -srcfolder "$STAGE" -fs APFS -format ULFO "$DMG" >/dev/null
+# macOS 26+ deprecates `hdiutil create` in favour of `diskutil image`.
+if diskutil image create from --help >/dev/null 2>&1; then
+  diskutil image create from --format ULFO --volumeName "Pitlane" "$STAGE" "$DMG" >/dev/null
+else
+  hdiutil create -volname "Pitlane" -srcfolder "$STAGE" -fs APFS -format ULFO "$DMG" >/dev/null
+fi
 rm -rf "$STAGE"
 codesign --force --timestamp --sign "$SIGN_ID" "$DMG"
 
