@@ -60,7 +60,7 @@ enum LogSource: String, CaseIterable, Identifiable {
 }
 
 enum Diagnostics {
-    static func report() -> String {
+    static func report(controllers: [String] = Controllers.names()) -> String {
         let s = Settings.load()
         let fm = FileManager.default
         func yes(_ b: Bool) -> String { b ? "yes" : "no" }
@@ -98,14 +98,18 @@ enum Diagnostics {
           Rosetta 2    \(yes(rosetta()))
 
         Runtime
-          Engine       \(Runtime.id)
-          Components   \(Runtime.description)
+          Id           \(Runtime.id)\(Runtime.isPinned ? " (tested)" : " (newer, not yet tested)")
+          Versions     \(Runtime.componentVersions.map { "\($0.0) \($0.1)" }.joined(separator: ", "))
           Installed    \(yes(Runtime.isInstalled))  \(Runtime.dir.path)
 
         Settings
           Graphics     \(s.backend.label)
           Display      \(s.displayMode.label) (game config: \(displayMode))
           Retina       \(yes(s.retina))   Metal HUD \(yes(s.metalHUD))   Debug logging \(yes(s.debugLogging))
+          MetalFX      \(s.metalFX ? "\(s.metalFXFactor)×" : "off")\(s.metalFX && s.backend != .dxmt ? " (inactive: needs DXMT)" : "")
+          Frame limit  \(s.maxFps.map { "\($0)" } ?? "game setting") (game config: \(GameConfig.maxFps.map { "\($0)" } ?? "?"))
+          Window size  \(s.windowSize?.label ?? "game setting") (game config: \(GameConfig.windowSize ?? "?"))
+          Keyboard     Cmd→Ctrl \(yes(s.commandIsCtrl))   Option→Alt \(yes(s.optionIsAlt))
           Efficiency cores for Ubisoft \(yes(s.deprioritizeUbisoft))   Shutdown after play \(yes(s.cleanupAfterExit))
 
         Prefix
@@ -116,6 +120,8 @@ enum Diagnostics {
         Game
           Exe          \(yes(fm.fileExists(atPath: Paths.gameExe.path)))  \(Paths.gameExe.path)
           Registered   \(yes(registered))   Download staging files: \(stagingFiles)
+          Openplanet   \(Openplanet.installedVersion ?? "not installed")
+          Controllers  \(controllers.isEmpty ? "none detected" : controllers.joined(separator: ", "))
 
         Now
           wineserver   \(yes(Wine.serverRunning))

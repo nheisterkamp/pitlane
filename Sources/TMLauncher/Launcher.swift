@@ -6,12 +6,19 @@ final class Launcher: ObservableObject {
     enum Phase: Equatable { case working, needsSetup, needsGame, ready, running, failed }
 
     @Published var phase: Phase = .working
-    @Published var status = "Checking…"
+    @Published var status = "Checking…" { didSet { if Self.echo { print(status) } } }
     @Published var progress: Double?
     @Published var settings = Settings.load()
 
     var busy: Bool { phase == .working }
     var engineSummary: String { "\(settings.backend.short) · \(Runtime.description.components(separatedBy: " · ").first ?? "")" }
+
+    /// Headless mode (`--setup`) prints status lines instead of showing them.
+    static var echo = false
+
+    /// Results shown in Settings.
+    @Published var updates: Updates.Report?
+    @Published var usage: Maintenance.Usage?
 
     private static let trackmaniaId = "5595"
     private var gameWatch: Task<Void, Never>?
@@ -58,11 +65,11 @@ final class Launcher: ObservableObject {
 
     // MARK: - Actions
 
-    func setup() async {
+    func setup(openStore: Bool = true) async {
         phase = .working
         do {
             if !Runtime.isInstalled {
-                try await Runtime.install { [weak self] text, p in self?.status = text; self?.progress = p }
+                try await Runtime.install(status: report)
             }
             progress = nil
             if !prefixReady {
@@ -71,7 +78,7 @@ final class Launcher: ObservableObject {
                 // Wine's own D3D on Vulkan crashes Ubisoft Connect's GPU probe; OpenGL doesn't.
                 try await Wine.regAdd(#"HKCU\Software\Wine\Direct3D"#, "renderer", "gl")
                 try await Wine.regAdd(#"HKCU\Software\Wine\WineDbg"#, "ShowCrashDialog", "0", type: "REG_DWORD")
-                try await applyRetina(force: true)
+                try await applyRegistry(force: true)
                 await Wine.waitIdle()
             }
             if !ubisoftReady {
@@ -87,8 +94,10 @@ final class Launcher: ObservableObject {
                 try? FileManager.default.removeItem(at: installer)
                 guard ubisoftReady else { throw LauncherError("Ubisoft Connect did not install. See logs/setup.log.") }
             }
+            // After "Reset Windows environment" the game waits outside the prefix.
+            let restored = try Maintenance.restoreParkedGame()
             await refresh()
-            if phase == .needsGame { await installGame() }
+            if phase == .needsGame, openStore || restored { await installGame() }
         } catch {
             fail(error.localizedDescription)
         }
@@ -150,6 +159,7 @@ final class Launcher: ObservableObject {
         do {
             try await prepare()
             GameConfig.setDisplayMode(mode)
+            if let fps = settings.maxFps { GameConfig.setMaxFps(fps) }
             if mode == .windowed, let size = settings.windowSize {
                 GameConfig.setWindowSize(size, retina: settings.retina)
             }
@@ -180,11 +190,91 @@ final class Launcher: ObservableObject {
         await refresh()
     }
 
-    func updateRuntime() async {
+    /// Deletes and reinstalls the active runtime (e.g. after a damaged download).
+    func repairRuntime() async {
+        await perform("Repairing runtime…") {
+            await Wine.killAll()
+            try? FileManager.default.removeItem(at: Runtime.dir)
+            try await Runtime.install(status: self.report)
+            return "Runtime reinstalled."
+        }
+    }
+
+    // MARK: Openplanet
+
+    func installOpenplanet() async {
+        await perform("Installing Openplanet…") {
+            let v = try await Openplanet.install(status: self.report)
+            return "Openplanet \(v) installed. Press F3 in game to open it."
+        }
+    }
+
+    func removeOpenplanet() async {
+        await perform("Removing Openplanet…") {
+            try Openplanet.remove()
+            return "Openplanet removed. Your plugins in Documents/OpenplanetNext are kept."
+        }
+    }
+
+    // MARK: Updates
+
+    func checkUpdates() async {
+        await perform("Checking for updates…") {
+            let r = try await Updates.check()
+            self.updates = r
+            if let v = r.templateVersion { return "Graphics runtime \(v) is available (Settings → Updates)." }
+            return "Up to date."
+        }
+    }
+
+    func installUpdate() async {
+        guard let c = updates?.template else { return }
+        await perform("Installing graphics runtime…") {
+            await Wine.killAll()
+            try await Updates.installTemplate(c, status: self.report)
+            self.updates = nil
+            return "Now using graphics runtime \(Runtime.active.templateVersion). Revert in Settings → Updates if anything breaks."
+        }
+    }
+
+    func revertRuntime() async {
+        await perform("Reverting to the tested runtime…") {
+            await Wine.killAll()
+            try await Updates.revertToPinned(status: self.report)
+            return "Back on the tested runtime (\(Runtime.pinned.templateVersion))."
+        }
+    }
+
+    // MARK: Maintenance
+
+    func measureUsage() async { usage = await Maintenance.usage() }
+
+    func clearCaches() async {
+        await perform("Clearing caches…") {
+            Maintenance.clearCaches()
+            await self.measureUsage()
+            return "Downloads, logs and temporary files cleared."
+        }
+    }
+
+    /// Rebuilds the Windows environment and Ubisoft Connect, keeping the game files. You sign in
+    /// to Ubisoft Connect again; it then verifies the game instead of downloading it.
+    func resetEnvironment() async {
         phase = .working
-        await Wine.killAll()
-        try? FileManager.default.removeItem(at: Runtime.dir)
-        await setup()
+        status = "Resetting Windows environment…"
+        do {
+            try await Maintenance.dismantlePrefix()
+        } catch {
+            fail(error.localizedDescription)
+            return
+        }
+        await setup(openStore: true)
+    }
+
+    func uninstall() async {
+        phase = .working
+        status = "Uninstalling…"
+        await Maintenance.uninstall()
     }
 
     func revealFiles() {
@@ -207,7 +297,7 @@ final class Launcher: ObservableObject {
     /// restores its files, so these are re-checked every time (a few ms when already done).
     private func prepare() async throws {
         if !Wine.serverRunning {
-            try await applyRetina(force: false)
+            try await applyRegistry(force: false)
             disableUbisoftOverlay()
         }
         let cef = Paths.ubisoftDir.appendingPathComponent("libcef.dll")
@@ -226,12 +316,34 @@ final class Launcher: ObservableObject {
         try? yaml.write(to: url, atomically: true, encoding: .utf8)
     }
 
-    /// Retina mode renders at native resolution: sharper, but up to 4× the pixels.
-    private func applyRetina(force: Bool) async throws {
-        guard force || settings.appliedRetina != settings.retina else { return }
-        try await Wine.regAdd(#"HKCU\Software\Wine\Mac Driver"#, "RetinaMode", settings.retina ? "y" : "n")
-        settings.appliedRetina = settings.retina
+    /// Writes Mac driver options (Retina mode, keyboard mapping) that changed since last time.
+    /// Each write costs a Wine start, so unchanged values are skipped. Wine reads them at start.
+    private func applyRegistry(force: Bool) async throws {
+        for (name, value) in settings.registry.sorted(by: { $0.key < $1.key })
+        where force || settings.appliedRegistry[name] != value {
+            try await Wine.regAdd(#"HKCU\Software\Wine\Mac Driver"#, name, value)
+            settings.appliedRegistry[name] = value
+        }
         settings.save()
+    }
+
+    /// Runs a maintenance task with the window showing progress, then restores the normal state.
+    private func perform(_ title: String, _ work: @escaping () async throws -> String?) async {
+        phase = .working
+        status = title
+        progress = nil
+        do {
+            let message = try await work()
+            await refresh()
+            if let message { status = message }
+        } catch {
+            fail(error.localizedDescription)
+        }
+    }
+
+    private func report(_ text: String, _ p: Double?) {
+        status = text
+        progress = p
     }
 
     private func watchForInstall() {

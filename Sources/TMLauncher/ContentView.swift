@@ -3,7 +3,6 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var launcher: Launcher
     @Environment(\.openWindow) private var openWindow
-    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -19,12 +18,9 @@ struct ContentView: View {
                 Button { openWindow(id: "logs") } label: { Image(systemName: "doc.text.magnifyingglass") }
                     .buttonStyle(.borderless)
                     .help("Logs and diagnostics")
-                Button { showSettings.toggle() } label: { Image(systemName: "gearshape") }
+                SettingsLink { Image(systemName: "gearshape") }
                     .buttonStyle(.borderless)
-                    .help("Settings")
-                    .popover(isPresented: $showSettings, arrowEdge: .bottom) {
-                        SettingsView().environmentObject(launcher).padding()
-                    }
+                    .help("Settings (⌘,)")
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -132,36 +128,5 @@ struct ContentView: View {
 
     private var currentSizeLabel: String {
         launcher.settings.windowSize?.label ?? "game setting"
-    }
-}
-
-struct SettingsView: View {
-    @EnvironmentObject var launcher: Launcher
-
-    var body: some View {
-        Form {
-            Picker("Graphics", selection: $launcher.settings.backend) {
-                ForEach(Backend.allCases) { b in
-                    Text(b.label).tag(b)
-                }
-            }
-            Toggle("Retina resolution (sharper, slower)", isOn: $launcher.settings.retina)
-            Toggle("Metal performance HUD", isOn: $launcher.settings.metalHUD)
-            Toggle("Debug logging (slower, for troubleshooting)", isOn: $launcher.settings.debugLogging)
-            Toggle("Quit launcher when the game starts", isOn: $launcher.settings.quitOnLaunch)
-            Toggle("Run Ubisoft Connect on efficiency cores while playing", isOn: $launcher.settings.deprioritizeUbisoft)
-            Toggle("Shut down Ubisoft Connect after playing", isOn: $launcher.settings.cleanupAfterExit)
-            Divider()
-            HStack {
-                Button("Open Ubisoft Connect") { Task { await launcher.openUbisoft() } }
-                Button("Show files") { launcher.revealFiles() }
-            }
-            HStack {
-                Button("Reinstall runtime") { Task { await launcher.updateRuntime() } }
-                Button("Kill Wine") { Task { await launcher.stop() } }
-            }
-        }
-        .frame(width: 340)
-        .onChange(of: launcher.settings) { launcher.saveSettings() }
     }
 }

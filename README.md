@@ -71,7 +71,31 @@ Ubisoft Connect and the game, logs, settings). Delete that folder and the app to
 Game settings and replays live in `~/Documents/Trackmania`, the same place CrossOver uses.
 
 `TMLAUNCHER_ROOT=/some/dir open -n "dist/Trackmania Launcher.app"` runs a fully separate
-install, for testing.
+install, for testing. `TMLauncher --setup` runs first-run setup headless, which with
+`TMLAUNCHER_ROOT` gives a clean-install test. `TMLauncher --snapshot out.png` renders the
+main window invisibly.
+
+## Releasing
+
+`scripts/build-app.sh` always signs with the hardened runtime (ad-hoc by default).
+`scripts/release.sh` builds a Developer ID-signed, notarized and stapled DMG. It needs two
+one-time steps with your Apple Developer account, listed at the top of the script: create a
+*Developer ID Application* certificate, and save notarytool credentials.
+
+## Settings (⌘,)
+
+| Tab | What |
+|---|---|
+| General | Quit on launch, efficiency cores for Ubisoft Connect, shutdown after play, debug logging |
+| Graphics | Translation layer, Retina, performance HUD, **MetalFX upscaling** (DXMT only), **frame limit** (the game's MaxFps) |
+| Input | Command → Ctrl and Option → Alt (Wine Mac driver), controllers detected by macOS |
+| Openplanet | One-click install/update/remove of [Openplanet](https://openplanet.dev). The installer refuses the game folder under Wine, so its payload is extracted with a pinned 7-Zip build. |
+| Maintenance | Disk usage, clear downloads/logs/temp, repair runtime, reset the Windows environment (keeps the game; you sign in to Ubisoft Connect again and it verifies the files), uninstall |
+| Updates | Installed component versions; checks Sikarugir for newer graphics runtimes (verified with GitHub's SHA-256 digest, one-click revert to the tested one). Newer Wine engines are listed but not installed until tested. |
+
+About MetalFX: D3DMetal's `D3DM_ENABLE_METALFX` only replaces DLSS, which Trackmania doesn't
+have. DXMT's swapchain upscaler works for any game: it renders at 1/factor and upscales with
+MetalFX spatial. That helps most on Retina screens.
 
 ## Logs and diagnostics
 

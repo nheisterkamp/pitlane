@@ -55,6 +55,10 @@ enum GameConfig {
 
     static var windowSize: String? { value("ScreenSizeWin") }
 
+    static var maxFps: Int? { number("MaxFps") }
+
+    static func setMaxFps(_ fps: Int) { setNumber("MaxFps", fps) }
+
     static func setWindowSize(_ size: WindowSize, retina: Bool) { set("ScreenSizeWin", size.configValue(retina: retina)) }
 
     /// Reads a string value inside the `"Display"` block (not `"DisplaySafe"`).
@@ -71,6 +75,28 @@ enum GameConfig {
               let r = valueRange(key, in: text), text[r] != value else { return }
         text.replaceSubrange(r, with: value)
         try? text.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// Numeric values are unquoted: `"MaxFps" : 150,`
+    static func number(_ key: String) -> Int? {
+        guard let text = try? String(contentsOf: url, encoding: .utf8),
+              let r = numberRange(key, in: text) else { return nil }
+        return Int(text[r])
+    }
+
+    static func setNumber(_ key: String, _ value: Int) {
+        guard var text = try? String(contentsOf: url, encoding: .utf8),
+              let r = numberRange(key, in: text), Int(text[r]) != value else { return }
+        text.replaceSubrange(r, with: String(value))
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    private static func numberRange(_ key: String, in text: String) -> Range<String.Index>? {
+        guard let block = text.range(of: #""Display"\s*:\s*\{"#, options: .regularExpression),
+              let k = text.range(of: #""\#(key)"\s*:\s*"#, options: .regularExpression,
+                                 range: block.upperBound..<text.endIndex) else { return nil }
+        let digits = text[k.upperBound...].prefix { $0.isNumber }
+        return digits.isEmpty ? nil : k.upperBound..<digits.endIndex
     }
 
     private static func valueRange(_ key: String, in text: String) -> Range<String.Index>? {

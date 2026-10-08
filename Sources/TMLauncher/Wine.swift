@@ -37,6 +37,11 @@ enum Wine {
             e["DYLD_FALLBACK_FRAMEWORK_PATH"] = ext.path
         case .dxmt:
             e["WINEDLLPATH_PREPEND"] = r.appendingPathComponent("dxmt/wine").path
+            if s.metalFX {
+                // Renders the swapchain at 1/factor and upscales it with MetalFX spatial.
+                e["DXMT_METALFX_SPATIAL_SWAPCHAIN"] = "1"
+                e["DXMT_CONFIG"] = "d3d11.metalSpatialUpscaleFactor=\(String(format: "%.2f", s.metalFXFactor));"
+            }
         case .dxvk:
             // DXVK 3 needs Vulkan 1.3+, which only KosmicKrisp provides on macOS.
             let icd = Runtime.kosmicKrispICD().path

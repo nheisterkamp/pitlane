@@ -10,7 +10,7 @@ enum Backend: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .d3dmetal: "D3DMetal (Apple GPTK), fastest"
         case .dxmt: "DXMT (open source Metal)"
-        case .dxvk: "DXVK + MoltenVK"
+        case .dxvk: "DXVK 3 + KosmicKrisp (Vulkan)"
         case .wined3d: "WineD3D (OpenGL), compatibility"
         }
     }
@@ -37,8 +37,16 @@ struct Settings: Codable, Equatable {
     var windowSize: WindowSize?
     /// Wine error output in the logs. Off by default: logging costs CPU on every call.
     var debugLogging = false
-    /// What RetinaMode was last written to the registry as, to skip the write when unchanged.
-    var appliedRetina: Bool?
+    /// MetalFX spatial upscaling of the output (DXMT only): render at 1/factor, upscale with MetalFX.
+    var metalFX = false
+    var metalFXFactor = 2.0
+    /// Frame limit written to the game's MaxFps. nil keeps the game's own setting.
+    var maxFps: Int?
+    /// Mac keyboard: Command acts as Ctrl, Option as Alt (Wine Mac driver options).
+    var commandIsCtrl = false
+    var optionIsAlt = false
+    /// Registry values last written, to skip the (slow) write when nothing changed.
+    var appliedRegistry: [String: String] = [:]
 
     init() {}
 
@@ -55,7 +63,23 @@ struct Settings: Codable, Equatable {
         displayMode = (try? c.decodeIfPresent(DisplayMode.self, forKey: .displayMode)) ?? d.displayMode
         debugLogging = (try? c.decodeIfPresent(Bool.self, forKey: .debugLogging)) ?? d.debugLogging
         windowSize = try? c.decodeIfPresent(WindowSize.self, forKey: .windowSize)
-        appliedRetina = try? c.decodeIfPresent(Bool.self, forKey: .appliedRetina)
+        metalFX = (try? c.decodeIfPresent(Bool.self, forKey: .metalFX)) ?? d.metalFX
+        metalFXFactor = (try? c.decodeIfPresent(Double.self, forKey: .metalFXFactor)) ?? d.metalFXFactor
+        maxFps = try? c.decodeIfPresent(Int.self, forKey: .maxFps)
+        commandIsCtrl = (try? c.decodeIfPresent(Bool.self, forKey: .commandIsCtrl)) ?? d.commandIsCtrl
+        optionIsAlt = (try? c.decodeIfPresent(Bool.self, forKey: .optionIsAlt)) ?? d.optionIsAlt
+        appliedRegistry = (try? c.decodeIfPresent([String: String].self, forKey: .appliedRegistry)) ?? d.appliedRegistry
+    }
+
+    /// Wine Mac driver registry values these settings map to.
+    var registry: [String: String] {
+        [
+            "RetinaMode": retina ? "y" : "n",
+            "LeftCommandIsCtrl": commandIsCtrl ? "y" : "n",
+            "RightCommandIsCtrl": commandIsCtrl ? "y" : "n",
+            "LeftOptionIsAlt": optionIsAlt ? "y" : "n",
+            "RightOptionIsAlt": optionIsAlt ? "y" : "n",
+        ]
     }
 
     private static let url = Paths.root.appendingPathComponent("settings.json")

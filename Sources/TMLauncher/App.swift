@@ -12,23 +12,48 @@ struct TMLauncherApp: App {
             print(Diagnostics.report())
             exit(0)
         }
+        // `--setup` runs first-run setup headless (no window, Ubisoft Connect not opened).
+        // With TMLAUNCHER_ROOT set, this tests a clean install without touching the real one.
+        if CommandLine.arguments.contains("--setup") {
+            Self.headlessSetup()
+        }
         // Developer aid: `--snapshot out.png` renders the main view off-screen (never shown).
-        if let i = CommandLine.arguments.firstIndex(of: "--snapshot"), i + 1 < CommandLine.arguments.count {
-            Self.snapshot(to: URL(fileURLWithPath: CommandLine.arguments[i + 1]))
+        // `--snapshot out.png settings 1` renders a Settings tab instead.
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count {
+            let tab = args.count > i + 3 && args[i + 2] == "settings" ? Int(args[i + 3]) : nil
+            Self.snapshot(to: URL(fileURLWithPath: args[i + 1]), settingsTab: tab)
         }
     }
 
     @MainActor
-    private static func snapshot(to url: URL) -> Never {
+    private static func headlessSetup() -> Never {
+        Launcher.echo = true
+        let launcher = Launcher()
+        let start = Date()
+        Task { @MainActor in
+            await launcher.setup(openStore: false)
+            let ok = launcher.phase == .needsGame || launcher.phase == .ready
+            print("RESULT: \(ok ? "OK" : "FAILED") phase=\(launcher.phase) in \(Int(Date().timeIntervalSince(start)))s")
+            exit(ok ? 0 : 1)
+        }
+        RunLoop.main.run()
+        exit(1)
+    }
+
+    @MainActor
+    private static func snapshot(to url: URL, settingsTab: Int?) -> Never {
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)
         let launcher = Launcher()
-        let host = NSHostingView(rootView: ContentView().environmentObject(launcher))
-        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 380, height: 240),
+        let root: AnyView = settingsTab.map { AnyView(SettingsView(tab: $0).environmentObject(launcher)) }
+            ?? AnyView(ContentView().environmentObject(launcher))
+        let host = NSHostingView(rootView: root)
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 520, height: 400),
                               styleMask: [.borderless], backing: .buffered, defer: false)
         window.contentView = host
         Task { await launcher.refresh() }
-        RunLoop.main.run(until: Date().addingTimeInterval(2))
+        RunLoop.main.run(until: Date().addingTimeInterval(settingsTab == nil ? 2 : 5))
         window.setContentSize(host.fittingSize)
         // Below the desktop wallpaper: on screen for the window server, invisible to the user.
         window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)) - 1)
@@ -58,6 +83,10 @@ struct TMLauncherApp: App {
             LogsView()
         }
         .defaultSize(width: 900, height: 560)
+
+        SwiftUI.Settings {
+            SettingsView().environmentObject(launcher)
+        }
     }
 }
 

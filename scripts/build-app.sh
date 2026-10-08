@@ -37,7 +37,13 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+# Hardened runtime always, so local builds behave like notarized ones. SIGN_ID selects a
+# Developer ID certificate (scripts/release.sh sets it); the default is ad-hoc.
+if [[ -n "${SIGN_ID:-}" ]]; then
+  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$APP"
+else
+  codesign --force --options runtime --sign - "$APP"
+fi
 echo "Built $APP ($(du -sh "$APP" | cut -f1))"
 
 if [[ "${1:-}" == "--install" ]]; then
