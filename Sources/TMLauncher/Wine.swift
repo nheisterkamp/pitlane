@@ -87,20 +87,28 @@ enum Wine {
     ///   performance cores to the game. It repeats every minute to catch respawned renderers.
     /// - after the game exits, it optionally shuts the prefix down.
     static func scheduleWatcher(demote: Bool, cleanup: Bool) throws {
+        // Trackmania.exe exits right away and Ubisoft Connect relaunches it 10-20 s later, so
+        // "gone" only counts after a real session: up for 1 min, then absent for 30 s. If the
+        // game never really runs (e.g. a long Ubisoft update), leave everything alone.
         let script = """
-        i=0; until pgrep -qf '[/\\\\][T]rackmania\\.exe'; do i=$((i+1)); [ $i -gt 120 ] && exit 0; sleep 2; done
-        n=9
-        while pgrep -qf '[/\\\\][T]rackmania\\.exe'; do
-          n=$((n+1))
-          if [ "$2" = 1 ] && [ $n -ge 12 ]; then
-            n=0
-            for p in $(pgrep -f '[u]pc\\.exe|[U]playWebCore\\.exe|[U]bisoftGameLauncher|[U]playService\\.exe'); do
-              /usr/sbin/taskpolicy -b -p "$p" 2>/dev/null
-            done
+        seen=0; gone=0; t=0; n=11
+        while :; do
+          if pgrep -qf '[/\\\\][T]rackmania\\.exe'; then
+            seen=$((seen+1)); gone=0; n=$((n+1))
+            if [ "$2" = 1 ] && [ $n -ge 12 ]; then
+              n=0
+              for p in $(pgrep -f '[u]pc\\.exe|[U]playWebCore\\.exe|[U]bisoftGameLauncher|[U]playService\\.exe'); do
+                /usr/sbin/taskpolicy -b -p "$p" 2>/dev/null
+              done
+            fi
+          else
+            gone=$((gone+1))
+            [ $seen -ge 12 ] && [ $gone -ge 6 ] && break
+            [ $seen -lt 12 ] && [ $t -gt 360 ] && exit 0
           fi
-          sleep 5
+          t=$((t+1)); sleep 5
         done
-        [ "$3" = 1 ] && { sleep 3; exec "$1" -k; }
+        [ "$3" = 1 ] && exec "$1" -k
         exit 0
         """
         try Shell.spawnDetached("/bin/sh",
