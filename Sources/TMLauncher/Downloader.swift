@@ -17,7 +17,11 @@ final class Downloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendabl
         defer { session.finishTasksAndInvalidate() }
         return try await withCheckedThrowingContinuation { cont in
             d.continuation = cont
-            session.downloadTask(with: url).resume()
+            // Ask for the exact bytes: some CDNs (e.g. Microsoft's) label .tar.gz files with
+            // Content-Encoding: gzip, and URLSession would then decompress them, breaking checksums.
+            var request = URLRequest(url: url)
+            request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+            session.downloadTask(with: request).resume()
         }
     }
 
