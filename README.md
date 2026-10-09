@@ -148,3 +148,10 @@ are by [Sikarugir](https://github.com/Sikarugir-App), [3Shain/dxmt](https://gith
 DXVK, Mesa and Apple. D3DMetal is licensed by Apple for non-commercial use. The Pitlane icon is
 original artwork: an Icon Composer document (`Resources/Pitlane.icon`, SVG layers) compiled by
 `actool` into a vector `Assets.car` for macOS 26+, with an `.icns` fallback for older macOS.
+
+## AI disclosure
+
+Pitlane was built with AI assistance. Most of the code, scripts, documentation and the icon were
+written by Anthropic's Claude (in Claude Code), directed, reviewed and tested by Niels
+Heisterkamp on his own Mac. Treat it like any community project: read the code
+before you trust it, and report problems in the issues.
