@@ -155,3 +155,9 @@ Pitlane was built with AI assistance. Most of the code, scripts, documentation a
 written by Anthropic's Claude (in Claude Code), directed, reviewed and tested by Niels
 Heisterkamp on his own Mac. Treat it like any community project: read the code
 before you trust it, and report problems in the issues.
+
+## License
+
+MIT, see [LICENSE](LICENSE). This covers Pitlane's own code and icon only. Everything Pitlane
+downloads (Wine, D3DMetal, DXMT, Ubisoft Connect, the game, Openplanet, 7-Zip) keeps its own
+licence.
